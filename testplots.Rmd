@@ -1,0 +1,107 @@
+---
+title: "pltos"
+author: "Steven Lawrence"
+date: "5/3/2020"
+output: html_document
+---
+
+```{r setup , message = FALSE, warning = FALSE, include=F}
+
+# global default settings for chunks
+knitr::opts_chunk$set( eval = TRUE, warning = FALSE, message = FALSE,
+                     # fig.dim = c(6, 3)
+                     fig.width = 9,
+                     fig.height = 5,
+                     dpi = 144,
+                     fig.pos = "!h"
+                      )
+
+
+Packages <- c("tidyverse", "arsenal", "readxl", 
+              "patchwork", "GGally", "ghibli",
+              "plotly","ggpubr","gridExtra",
+              "pastecs","DataCombine", "ggrepel",
+              "tseries","kableExtra","viridis",
+              "RColorBrewer", "fabletools", "gtrendsR",
+              "fpp3","tsibble", "formattable", "forecast",
+              "glue", "feasts")
+
+invisible(lapply(Packages, library, character.only = TRUE))
+
+
+#theme global setting for ggplot
+theme_set(theme_minimal() + 
+            theme(legend.position = "bottom") +
+           theme(plot.title = element_text(hjust = 0.5, size = 12),
+                 plot.subtitle = element_text(hjust = 0.5, size = 8))
+         )
+```
+
+
+
+```{r, warning=F, message=F}
+# reading in the data
+
+data <- read_csv("./data/order_data.csv") %>% 
+        #janitor::clean_names() %>% 
+        filter(User == "JEFFRO JOHNSON") %>% 
+        separate(Time_Stamp, c("year","month","day", "time")) %>% 
+        na.omit() %>% 
+        arrange(year, month, day) %>% 
+        unite("time_stamp" , year:day,  sep = "-") %>% 
+        group_by(time_stamp) %>% 
+        summarize(
+          nrr = sum(Total_Pieces)
+        ) %>% 
+       # select(time_stamp, total_pieces) %>% 
+        mutate(time_stamp = yearquarter(time_stamp)) %>% 
+        as_tsibble(index = time_stamp)
+
+data %>% 
+        gg_subseries(nrr)
+
+
+
+
+
+
+
+
+
+
+read_csv("./data/order_data.csv") %>% 
+        janitor::clean_names( ) %>% 
+       # separate(date, into = c("year","month","day")) %>% 
+       # unite("date", year:month, sep = "-", remove = T) %>% 
+        select(date, total_pieces) %>% 
+        group_by(date) %>% 
+        summarise(total_pieces = sum(total_pieces)) %>% 
+        mutate(date = yearweek(date)) %>% 
+        group_by(date) %>% 
+        summarise(total_pieces = sum(total_pieces)) %>% 
+        as_tsibble(index = date) %>% 
+       # autoplot()
+       gg_subseries(total_pieces, period = "month")
+
+read_csv("./data/order_data.csv") %>% 
+        janitor::clean_names() %>% 
+        separate(time_stamp, into = c("year","month","day","time")) %>% 
+        unite("date1", year:time, sep = "-", remove = T) %>% 
+        select(date1, total_pieces) %>% 
+        group_by(date1) %>% 
+        summarise(total_pieces = sum(total_pieces)) %>% 
+        separate(date1, into = c("year","month","day","time")) %>% 
+        group_by(day) %>% 
+        summarise(total_pieces = sum(total_pieces)) %>% 
+        
+        mutate(day = yearweek(day)) %>%
+        as_tsibble(index = day) %>% 
+        gg_season(total_pieces, period = "week")
+  
+        group_by(date) %>% 
+        summarise(total_pieces = sum(total_pieces)) %>% 
+        as_tsibble(index = date) %>% 
+       # autoplot()
+       gg_subseries(total_pieces, period = "month")
+```
+
